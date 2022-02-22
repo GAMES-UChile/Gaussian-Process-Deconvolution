@@ -62,22 +62,22 @@ class gpc:
         self.gamma_h = None
         self.sigma_n = np.std(self.y)/10
 
-    def set_observations_no_hype(self, times_y,y): 
+    def set_observations_no_hype(self, times_y,y):
         self.times_y = times_y
         self.y = y
         self.Ny =len(y)
 
-    def load(self, times_y,y): 
+    def load(self, times_y,y):
         self.times_y = times_y
         self.y = y
         self.Ny =len(y)
 
-    def set_filter_params(self, p): 
+    def set_filter_params(self, p):
         # set the filter h parameters for the not-blind case
         # For RBF: p0 * exp(-t**2/(2*p1)), i.e., variance and sq lengthscale
         self.theta_h = p
 
-    def neg_log_likelihood(self):        
+    def neg_log_likelihood(self):
         Y = self.y
         Gram = Spec_Mix(self.times_y,self.times_y,self.gamma,self.theta,self.sigma) + 1e-8*np.eye(self.Ny)
         K = Gram + self.sigma_n**2*np.eye(self.Ny)
@@ -148,12 +148,12 @@ class gpc:
             hypers0[1] = ((np.max(self.times_y)-np.min(self.times_y))/5)**2
             # noise var is 10% of data variance
             hypers0[2] = 0.01*np.var(self.y)
-            
-            #init cond and optimisation
+
+            # init cond and optimisation
             hypers0 = np.log(hypers0)
-            #loc0 = np.linspace(np.min(self.times_y),np.max(self.times_y), m)
+            # loc0 = np.linspace(np.min(self.times_y),np.max(self.times_y), m)
             print(f'initial hypers: {hypers0}')
-            #hypers0 = np.concatenate((hypers0, loc0), axis=0) 
+            # hypers0 = np.concatenate((hypers0, loc0), axis=0) 
             res = minimize(self.VSGP_loss, hypers0, args=(), method='L-BFGS-B', options={'maxiter': 500, 'disp': False})
             self.params = np.exp(res.x[0:3])
             self.ind_loc = res.x[3:]
@@ -162,35 +162,34 @@ class gpc:
             print(f'sigma2 ={self.params[0]}')
             print(f'lenghtscale2 ={self.params[1]}')
             print(f'sigma2_n ={self.params[2]}')
-            #print(f'induc locations ={self.ind_loc}')
+            # print(f'induc locations ={self.ind_loc}')
 
     def VSGP_loss(self, hypers):
 
         if self.kernel_id == 'RBF-RBF':
-            #print(f'loss function for {self.kernel_id}')
+            # print(f'loss function for {self.kernel_id}')
             # use more eloquent notation:
-            #kernel & variational params
-            s2 = np.exp(hypers[0]) #marginal variance
-            l2 = np.exp(hypers[1]) #square lengthscale
-            s2_n = np.exp(hypers[2]) #noise variance
-            #u_loc = hypers[3:] 
-            #m = len(u_loc)
-            u_loc = np.linspace(np.min(self.times_y),np.max(self.times_y), self.m)
-            beta = 1/s2_n #noise precision
-            #data
+            # kernel & variational params
+            s2 = np.exp(hypers[0])    # marginal variance
+            l2 = np.exp(hypers[1])    # square lengthscale
+            s2_n = np.exp(hypers[2])  # noise variance
+            # u_loc = hypers[3:] 
+            # m = len(u_loc)
+            u_loc = np.linspace(np.min(self.times_y), np.max(self.times_y), self.m)
+            beta = 1/s2_n  # noise precision
+            # data
             Y = self.y
             N = self.Ny
             # filter params
-            mag_h = self.theta_h[0] #filter's magnitude or power
-            l2_h = self.theta_h[1] #filter's square lengthscale
+            mag_h = self.theta_h[0]  # filter's magnitude or power
+            l2_h = self.theta_h[1]   # filter's square lengthscale
 
-            #building cost fn
-            s2_fx, l2_fx = RBF_convolution(s2,l2, mag_h, l2_h)
+            # building cost fn
+            s2_fx, l2_fx = RBF_convolution(s2, l2, mag_h, l2_h)
             s2_f, l2_f = RBF_convolution(s2_fx, l2_fx, mag_h, l2_h)
-            
-            Kmn = SE(u_loc,self.times_y,s2_fx,l2_fx)
-            Kmm = SE(u_loc,u_loc,s2,l2) 
 
+            Kmn = SE(u_loc, self.times_y, s2_fx, l2_fx)
+            Kmm = SE(u_loc, u_loc, s2, l2) 
 
             temp1 = Kmn.T@np.linalg.solve(Kmm + np.eye(self.m)*1e-8,Kmn)
             temp2 = temp1 + np.eye(N)*s2_n
@@ -200,61 +199,54 @@ class gpc:
             (sign, logdet) = np.linalg.slogdet(temp2)
 
             ELBO = -N/2*np.log(2*np.pi) - 1/2*logdet - 1/2*Y.T@np.linalg.solve(temp2+ np.eye(N)*1e-8   , Y) - temp3
-            #print(beta)
+            # print(beta)
             return -ELBO
-
-
 
     def predict_VSGP(self, times_x = None):
 
-
-        self.ind_loc = np.linspace(np.min(self.times_y),np.max(self.times_y), self.m)
+        self.ind_loc = np.linspace(np.min(self.times_y),
+                                   np.max(self.times_y), self.m)
         s2, l2, s2_n = self.params
         beta = 1/s2_n
-        mag_h = self.theta_h[0] #filter's magnitude or power
-        l2_h = self.theta_h[1] #filter's square lengthscale
-        s2_fx, l2_fx = RBF_convolution(s2,l2, mag_h, l2_h)
+        mag_h = self.theta_h[0]  # filter's magnitude or power
+        l2_h = self.theta_h[1]   # filter's square lengthscale
+        s2_fx, l2_fx = RBF_convolution(s2, l2, mag_h, l2_h)
         u_loc = self.ind_loc
         m = len(u_loc)
 
-        Kmn = SE(u_loc,self.times_y,s2_fx,l2_fx)
-        Kmm = SE(u_loc,u_loc,s2,l2) 
+        Kmn = SE(u_loc, self.times_y, s2_fx, l2_fx)
+        Kmm = SE(u_loc, u_loc, s2, l2) 
         temp1 = np.linalg.solve(Kmm, Kmn)
-        Lambda = np.linalg.solve(Kmm,beta*Kmn@(temp1.T) + np.eye(m))
+        Lambda = np.linalg.solve(Kmm, beta*Kmn@(temp1.T) + np.eye(m))
         u_hat = beta * np.linalg.solve(Kmm@Lambda, Kmn@self.y)
 
-        Kxm = SE(times_x, u_loc,s2,l2)
-        Kxx = SE(times_x, times_x,s2,l2)
+        Kxm = SE(times_x, u_loc, s2, l2)
+        Kxx = SE(times_x, times_x, s2, l2)
 
-    
-        #return  Kxm@np.linalg.solve(Kmm, u_hat), Kxx -Kxm@np.linalg.solve(Kmm, Kxm.T), u_hat
+        # return  Kxm@np.linalg.solve(Kmm, u_hat), Kxx -Kxm@np.linalg.solve(Kmm, Kxm.T), u_hat
         L = np.linalg.solve(Kmm, Kxm.T)
-        return L.T@u_hat, Kxx  + (np.linalg.solve(Lambda,L).T - Kxm)@L, u_hat
-
+        return L.T@u_hat, Kxx + (np.linalg.solve(Lambda, L).T - Kxm)@L, u_hat
 
     def predict(self, times_x = None):
         np.random.seed(1)
 
         s2, l2, s2_n = self.params
-        mag_h = self.theta_h[0] #filter's magnitude or power
-        l2_h = self.theta_h[1] #filter's square lengthscale
-        s2_fx, l2_fx = RBF_convolution(s2,l2, mag_h, l2_h)
+        mag_h = self.theta_h[0]  # filter's magnitude or power
+        l2_h = self.theta_h[1]   # filter's square lengthscale
+        s2_fx, l2_fx = RBF_convolution(s2, l2, mag_h, l2_h)
         s2_f, l2_f = RBF_convolution(s2_fx, l2_fx, mag_h, l2_h)
 
-        Kyy = SE(self.times_y, self.times_y,s2_f, l2_f)  + np.eye(self.Ny)*s2_n
-        Kxy = SE(times_x, self.times_y,s2_fx, l2_fx)
-        Kxx = SE(times_x, times_x,s2,l2)
-        return  Kxy@np.linalg.solve(Kyy, self.y), Kxx -Kxy@np.linalg.solve(Kyy, Kxy.T)
-        
+        Kyy = SE(self.times_y, self.times_y, s2_f, l2_f) + np.eye(self.Ny)*s2_n
+        Kxy = SE(times_x, self.times_y, s2_fx, l2_fx)
+        Kxx = SE(times_x, times_x, s2, l2)
+        return  Kxy@np.linalg.solve(Kyy, self.y), Kxx - Kxy@np.linalg.solve(Kyy, Kxy.T)
 
-    def sample_x(self, times_x=np.linspace(0,1000,100), params=[1,1], how_many = 1):
+    def sample_x(self, times_x=np.linspace(0, 1000, 100), params=[1, 1], how_many=1):
         np.random.seed(1)
         if self.kernel_id == 'RBF-RBF':
-            cov_x = SE(times_x,times_x,params[0],params[1]) + 0*1e-5*np.eye(len(times_x))
-        x = np.random.multivariate_normal(np.zeros_like(times_x),cov_x, how_many)
+            cov_x = SE(times_x, times_x, params[0], params[1]) + 0*1e-5*np.eye(len(times_x))
+        x = np.random.multivariate_normal(np.zeros_like(times_x), cov_x, how_many)
         return x.T
-
-
 
     def sample_from_prior(self, times_x, times_f, params):
         np.random.seed(1)
@@ -267,10 +259,13 @@ class gpc:
             sigma_y = sigma_x*sigma_h*sigma_h*(np.pi/np.sqrt(2*gamma_x*gamma_h + gamma_h**2))**(0.5)
             theta_y = theta_x
             gamma_y = 1/(1/gamma_x + 2/gamma_h)
-            cov_x = Spec_Mix(times_x,times_x,gamma_x,theta_x,sigma_x) + 1e-5*np.eye(len(times_x))
-            cov_fx = Spec_Mix(times_f,times_x, gamma_xh, theta_x, sigma_xh)
-            cov_f = Spec_Mix(times_f,times_f, gamma_y, theta_y, sigma_y) + 1e-5*np.eye(len(times_f))
-            paramy = np.array([gamma_y, theta_y, sigma_y,])
+            cov_x = Spec_Mix(times_x, times_x, gamma_x, theta_x,
+                             sigma_x) + 1e-5*np.eye(len(times_x))
+            cov_fx = Spec_Mix(times_f, times_x, gamma_xh, 
+                              theta_x, sigma_xh)
+            cov_f = Spec_Mix(times_f, times_f, gamma_y, theta_y,
+                             sigma_y) + 1e-5*np.eye(len(times_f))
+            paramy = np.array([gamma_y, theta_y, sigma_y, ])
 
         elif self.kernel_id == 'Sinc-Sinc':
             xi_x, delta_x, sigma_x, xi_h, delta_h = params[:5]
@@ -452,18 +447,21 @@ class gpc:
         self.signal_label = signal_label
 
 
-def outersum(a,b):
-    return np.outer(a,np.ones_like(b))+np.outer(np.ones_like(a),b)
+def outersum(a, b):
+    return np.outer(a, np.ones_like(b))+np.outer(np.ones_like(a), b)
 
-def Spec_Mix(x,y, gamma, theta, sigma=1):
-    return sigma**2 * np.exp(-gamma*outersum(x,-y)**2)*np.cos(2*np.pi*theta*outersum(x,-y))
+
+def Spec_Mix(x, y, gamma, theta, sigma=1):
+    return sigma**2 * np.exp(-gamma*outersum(x, -y)**2)*np.cos(2*np.pi*theta*outersum(x, -y))
+
 
 def SE(x,y, s2, l2):
-    return s2 * np.exp(-outersum(x,-y)**2/(2*l2))
+    return s2 * np.exp(-outersum(x, -y)**2/(2*l2))
+
 
 def Spec_Mix_sine(x,y, gamma, theta, sigma=1):
     return sigma**2 * np.exp(-gamma*outersum(x,-y)**2)*np.sin(2*np.pi*theta*outersum(x,-y))
-    
+
 def Spec_Mix_spectral(x, y, alpha, gamma, theta, sigma=1):
     magnitude = np.pi * sigma**2 / (np.sqrt(alpha*(alpha + 2*gamma)))
     return magnitude * np.exp(-np.pi**2/(2*alpha)*outersum(x,-y)**2 - 2*np.pi*2/(alpha + 2*gamma)*(outersum(x,y)/2-theta)**2)
