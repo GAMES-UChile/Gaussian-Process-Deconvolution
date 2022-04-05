@@ -30,7 +30,7 @@ class GPC(nn.Module):
         with torch.no_grad():
             if self.kernel_id == 'RBF-RBF':
                 cov_x = SE(times_x, times_x, params[0], params[1]) + 0*1e-5*np.eye(len(times_x))
-        x = np.random.multivariate_normal(np.zeros_like(times_x),
+        x = np.random.multivariate_normal(np.zeros((times_x.shape[0],)),
                                           cov_x, how_many)
         return x.T
 
@@ -121,13 +121,28 @@ class GPC(nn.Module):
             loss_dict['inducing points'] = self.u_loc.detach().cpu()
         return loss_dict
 
+
 def outersum(a, b):
     return (torch.outer(a, torch.ones_like(b)) +
             torch.outer(torch.ones_like(a), b))
 
+# TODO: compare new implementation with old one
+#def SE(x, y, s2, l2):
+#    return s2 * torch.exp(-outersum(x, -y)**2/(2*l2))
 
-def SE(x, y, s2, l2):
-    return s2 * torch.exp(-outersum(x, -y)**2/(2*l2))
+
+def SE(X1, X2, l=1.0, sigma_f=1.0):
+    """
+    Isotropic squared exponential kernel.
+
+    Args:
+    X1: Array of m points (m x d).
+    X2: Array of n points (n x d).
+
+    Returns: (m x n) matrix.
+    """
+    sqdist = torch.sum(X1**2, 1).reshape(-1, 1) + torch.sum(X2**2, 1) - 2 * torch.matmul(X1, X2.T)
+    return sigma_f**2 * np.exp(-0.5 / l**2 * sqdist)
 
 
 def RBF_convolution(s1, l1, s2, l2):
