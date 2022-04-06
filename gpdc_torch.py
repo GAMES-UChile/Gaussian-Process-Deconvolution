@@ -38,8 +38,12 @@ class GPC(nn.Module):
         self.times_y = times_y.clone().detach()
         self.y = torch.tensor(y).float()
         self.Ny = len(y)
+        #half = (torch.max(self.times_y) - torch.min(self.times_y))/2
         self.u_loc = torch.linspace(torch.min(self.times_y),
                                     torch.max(self.times_y), self.m)
+        # test ~ exact inference
+        # self.u_loc = torch.tensor(self.times_y).float()
+        # self.m = self.u_loc.shape[0]
         if self.learn_inducing:
             self.u_loc = nn.Parameter(self.u_loc)
 
