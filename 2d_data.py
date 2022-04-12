@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from gpdc_torch import *
+from gpdc_2d import *
 import statsmodels.api as sm
 from scipy.io import wavfile
 import statsmodels as sm
@@ -33,7 +33,6 @@ times_y = times_x[idx]
 y = y[idx]
 del gpc
 
-exit()
 # train model
 gpc = GPC('RBF-RBF')
 gpc.load(times_y, y)
@@ -44,6 +43,7 @@ for i in range(num_steps):
     res = gpc.train_step(opt)
     print_loss(res, i)
 
+exit()
 # visualize setting and results
 fig, ax = plt.subplots(2, 1, figsize=(10, 8))
 ax[0].plot(times_x, x, label='x', color='orange')
