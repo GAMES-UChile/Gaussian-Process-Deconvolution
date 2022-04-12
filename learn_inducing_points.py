@@ -6,7 +6,7 @@ from gpdc_torch import GPC
 
 # experiment parameters
 N_data = 1000
-num_u = 300  # num of inducing points
+num_u = 150  # num of inducing points
 num_steps = 50 
 learning_rate = 0.1
 length_scale = 15
@@ -48,7 +48,7 @@ ax[0].plot(times_x, x, label='x', color='orange')
 ax[0].plot(times_x, f, label='f', color='blue')
 ax[0].plot(times_y, y, '.r', label='y')
 ax[0].plot(times_h, 10*h, lw=3, label='h')
-ax[0].set_xlim([0, 500])
+#ax[0].set_xlim([0, 500])
 ax[0].legend()
 # plot deconvolution with sparse representation and learnt parameters
 x_hat, V_hat, u_hat = gpc.forward(times_x)
@@ -64,6 +64,6 @@ u_loc = gpc.u_loc.detach().numpy()
 ax[1].scatter(u_loc, -2*np.ones_like(u_loc), marker="^",
               color='r', label='inducing points')
 ax[1].legend()
-ax[1].set_xlim([0, 500])
+#ax[1].set_xlim([0, 500])
 plt.show()
 

@@ -32,7 +32,7 @@ y = y[idx]
 del gpc
 
 # train model
-gpc = GPC('RBF-RBF')
+gpc = GPC('RBF-RBF', m=150)
 gpc.load(times_y, y)
 gpc.set_filter_params([filter_amplitude, filter_length_scale])
 opt = torch.optim.Adam(gpc.parameters(),
@@ -47,7 +47,7 @@ ax[0].plot(times_x, x, label='x', color='orange')
 ax[0].plot(times_x, f, label='f', color='blue')
 ax[0].plot(times_y, y, '.r', label = 'y')
 ax[0].plot(times_h, 10*h, lw=3, label = 'h')
-ax[0].set_xlim([0, 500])
+#ax[0].set_xlim([0, 500])
 ax[0].legend()
 # plot deconvolution with sparse representation and learnt parameters
 x_hat, V_hat, u_hat = gpc.forward(times_x)
@@ -60,6 +60,6 @@ ax[1].fill_between(times_x, x_hat-2*error_bars,
 ax[1].plot(times_x, x, label='x', color='orange')
 ax[1].plot(times_y, y, '.r', label='observations')
 ax[1].legend()
-ax[1].set_xlim([0, 500])
+#ax[1].set_xlim([0, 500])
 plt.show()
 
