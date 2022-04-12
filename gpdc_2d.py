@@ -36,7 +36,7 @@ class GPC(nn.Module):
 
     def load(self, times_y, y):
         self.times_y = times_y.clone().detach()
-        self.y = torch.tensor(y).float()
+        self.y = torch.tensor(y).double()
         self.Ny = len(y)
         #half = (torch.max(self.times_y) - torch.min(self.times_y))/2
 
@@ -47,7 +47,7 @@ class GPC(nn.Module):
         idx = np.arange(len(self.times_y))
         np.random.shuffle(idx)
         idx = sorted(idx[:self.m])
-        self.u_loc = self.times_y[idx]
+        self.u_loc = self.times_y[idx,:]
         # test ~ exact inference
         # self.u_loc = torch.tensor(self.times_y).float()
         # self.m = self.u_loc.shape[0]
@@ -104,10 +104,12 @@ class GPC(nn.Module):
             m = len(u_loc)
 
             Kmn = SE(u_loc, self.times_y, s2_fx, l2_fx)
-            Kmm = SE(u_loc, u_loc, s2, l2)
+            # TODO: why need to add offset here when using 2d inputs?
+            Kmm = SE(u_loc, u_loc, s2, l2) + torch.eye(self.m, dtype=torch.float64)*1e-8
             temp1 = torch.linalg.solve(Kmm, Kmn)
             Lambda = torch.linalg.solve(Kmm, beta*Kmn@(temp1.T)
                                         + torch.eye(m))
+            print(Kmm.dtype, Lambda.dtype, self.y.dtype)
             u_hat = beta * torch.linalg.solve(Kmm@Lambda, Kmn@self.y)
 
             Kxm = SE(times_x, u_loc, s2, l2)
@@ -132,7 +134,22 @@ class GPC(nn.Module):
             loss_dict['inducing points'] = self.u_loc.detach().cpu()
         return loss_dict
 
+    def test_kernel(self):
+        # TODO: check that kernel computations are equals!
+        l2 = torch.exp(self.length_scale)
+        s2 = torch.exp(self.amplitude_scale)
 
+        K1 = SE(self.times_y, self.times_y, s2, l2)
+        K2 = SE_2(self.times_y, self.times_y, s2, l2)
+        fig, ax = plt.subplots(1,2)
+        ax[0].imshow(K1[:20, :20].detach().numpy())
+        ax[1].imshow(K2[:20, :20].detach().numpy())
+        print(K1[:10, :10])
+        print(K2[:10, :10])
+
+
+        plt.show()
+        
 def outersum(a, b):
     return (torch.outer(a, torch.ones_like(b)) +
             torch.outer(torch.ones_like(a), b))
@@ -142,7 +159,7 @@ def outersum(a, b):
 #    return s2 * torch.exp(-outersum(x, -y)**2/(2*l2))
 
 
-def SE(X1, X2, l=1.0, sigma_f=1.0):
+def SE(X1, X2, s2, l2):
     """
     Isotropic squared exponential kernel.
 
@@ -153,7 +170,8 @@ def SE(X1, X2, l=1.0, sigma_f=1.0):
     Returns: (m x n) matrix.
     """
     sqdist = torch.sum(X1**2, 1).reshape(-1, 1) + torch.sum(X2**2, 1) - 2 * torch.matmul(X1, X2.T)
-    return sigma_f**2 * np.exp(-0.5 / l**2 * sqdist)
+    K = s2 * torch.exp(-0.5 / l2 * sqdist)
+    return K.double()
 
 
 def RBF_convolution(s1, l1, s2, l2):
@@ -162,5 +180,14 @@ def RBF_convolution(s1, l1, s2, l2):
     l = l1 + l2
     return s, l
 
+def outersum(a, b):
+    return (torch.outer(a, torch.ones_like(b)) +
+            torch.outer(torch.ones_like(a), b))
+
+
+def SE_(x, y, s2, l2):
+    x = x.reshape(-1,)
+    y = y.reshape(-1,)
+    return s2 * torch.exp(-outersum(x, -y)**2/(2*l2))
 
 
