@@ -1,4 +1,4 @@
-# Gaussian-Process-Deconvolution
+# Gaussian Process Deconvolution
 
 This repository contains the code used in
 
