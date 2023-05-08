@@ -2,7 +2,7 @@
 
 This repository contains the code used in
 
-- Felipe Tobar, Arnaud Robert, Jorge Silva. Gaussian Process Deconvolution. *Proceedings of the Royal Society A*, in press, 2023. 
+- Felipe Tobar, Arnaud Robert, Jorge Silva. Gaussian process deconvolution. *Proceedings of the Royal Society A*, in press, 2023. 
 
 This repository replicates the illustrative examples and the experiments in the paper:
 - Folder `f1` contains the examples and the first experiment (deconvolution of an audio signal)
