@@ -10,4 +10,4 @@ This repository replicates the illustrative examples and the experiments in the 
 
 In addition to replicating the simulations in the paper, the code here is currently under development and thus might inclde additional experiments.
 
-All data used in the article (and this repo) is either synthetic or public. Experiment 1 uses audio data from [here][http://www.mcsquared.com/reverb.htm], while Experiment 2 uses [CIFAR-10][https://www.cs.toronto.edu/~kriz/cifar.html].
+All data used in the article (and this repo) is either synthetic or public. Experiment 1 uses audio data from [here](http://www.mcsquared.com/reverb.htm), while Experiment 2 uses [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html).
