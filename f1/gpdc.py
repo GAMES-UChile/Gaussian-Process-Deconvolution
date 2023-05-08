@@ -88,7 +88,7 @@ class gpc:
     def nlogp(self, hypers):
         sigma = np.exp(hypers[0])
         gamma = np.exp(hypers[1])
-        theta = np.exp(hypers[2])*0
+        theta = np.exp(hypers[2])*0 #multiply by zero to force SE kernel (and not spectral mixture)
         sigma_n = np.exp(hypers[3])
 
         Y = self.y
